@@ -18,11 +18,13 @@ def convert_time(time):
 
 
 def location_exist(location):
-    reader = csv.reader(open('E:\DBMS\Project\Test_Excel.csv', 'rb'), delimiter=',')
-    for row in reader:
-        if (row[0] == location[0] and row[1] == location[1]):
-            return (row[2], row[3])
-
+    try:
+        reader = csv.reader(open('distance_cache.csv', 'rb'), delimiter=',')
+        for row in reader:
+            if (row[0] == location[0] and row[1] == location[1]):
+                return (row[2], row[3])
+    except IOError:
+        pass
 
 def find_distance(srcLat, srcLong, destLat, destLong):
     source = srcLat + ', ' + srcLong
@@ -38,7 +40,7 @@ def find_distance(srcLat, srcLong, destLat, destLong):
         drivetime = convert_time(distance.get('rows')[0].get('elements')[0].get('duration').get('text'))
         print drivedist
         print drivetime
-        writer = csv.writer(open('E:\DBMS\Project\Test_Excel.csv', 'a'), delimiter=',')
+        writer = csv.writer(open('distance_cache.csv', 'a'), delimiter=',')
         result = [drivedist, drivetime]
         writer.writerow(result)
         return result

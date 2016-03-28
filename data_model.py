@@ -1,5 +1,5 @@
 WINDOW_SIZE_IN_MIN = 15
-
+DELAY_TOLERANCE = 0.25
 class Trip:
 	"""
 	Represents the attributes of a trip

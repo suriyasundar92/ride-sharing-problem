@@ -11,19 +11,23 @@ def get_trip_from_record(record_dict):
 	dropoff_time = datetime.strptime(record_dict[" dropoff_datetime"], "%Y-%m-%d %X")
 	return data_model.Trip(record_dict["medallion"], pickup_location, dropoff_location, pickup_time, dropoff_time)
 
+
 def get_batch(index):
-	file_for_batch = 'trip_batch_' + str(index) + '.csv'
-	csv_reader = csv.DictReader(file_for_batch)
+	file_for_batch = 'trip_batch_' + str(index+1) + '.csv'
+	csv_reader = csv.DictReader(open(file_for_batch,'r'))
 	first_record = next(csv_reader)
+	print(first_record)
 	trip_for_first_record = get_trip_from_record(first_record)
 	batch_list = [get_trip_from_record(first_record)]
-
-	record = next(csv_dict_sequence)
-	trip_for_record = get_trip_from_record(record)
-	while True:
-		batch_list.append(trip_for_record)
-		record = next(csv_dict_sequence)
+	try:
+		record = next(csv_reader)
 		trip_for_record = get_trip_from_record(record)
+		while True:
+			batch_list.append(trip_for_record)
+			record = next(csv_reader)
+			trip_for_record = get_trip_from_record(record)
+	except StopIteration:
+		pass
 	return batch_list
 
 def batch_input_file(input_file):
@@ -50,6 +54,6 @@ def batch_input_file(input_file):
 			trip_for_first_record = trip_for_record
 	except StopIteration:
 		pass
-
-data_file = open("trip_data_1.csv")
-batch_input_file(data_file)
+if __name__ == "__main__":
+	data_file = open("trip_data_1.csv")
+	batch_input_file(data_file)
