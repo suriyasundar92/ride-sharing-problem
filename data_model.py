@@ -1,5 +1,26 @@
 WINDOW_SIZE_IN_MIN = 15
 DELAY_TOLERANCE = 0.25
+
+class MergedTrips:
+	"""
+	Represents a merged pair of trips
+	"""
+	def __init__(self, trip1, trip2):
+		self.trip_list = []
+		if(trip1.id == trip2.id):
+			raise Exception("Duplicate Trip")
+		self.trip_list.append(trip1.id)
+		self.trip_list.append(trip2.id)
+
+	def add(trip):
+		if(self.contains(trip.id)):
+			raise Exception("Duplicate Trip")
+		self.trip_list.append(trip)
+
+	def contains(trip):
+		return trip.id in self.trip_list
+
+
 class Trip:
 	"""
 	Represents the attributes of a trip

@@ -4,11 +4,65 @@ import logging
 from GoogleDistance import find_distance
 import data_model
 import networkx as nx
-logging.basicConfig(filename='distance.log')
-result_file = open('result_graph.p', 'wb')
-trip_subset = input_file.get_batch(0)[:30]
-graph = nx.Graph()
-graph.add_nodes_from([trip.id for trip in trip_subset])
+
+(SOURCE_LATITUDE, SOURCE_LONGITUDE) = (0, 0)
+
+
+def get_shareability_graph(trips, treshold):
+	graph_with_normal_treshold = nx.Graph()
+	graph_with_restricted_teshold = nx.Graph()
+	for i in range(len(trips)):
+		for j in range(i, len(trips)):
+			trip_distance_i = find_distance_from_source(trips[i].latitude, trips[i].longitude)
+			trip_distance_j = find_distance_from_source(trips[j].latitude, trips[j].longitude)
+			distance_between_destinations = find_distance(trips[i].latitude, trips[i].longitude,
+				trips[j].latitude, trips[j].longitude)
+			a, b = sorted([trip_distance_i, trip_distance_j])
+			ab = distance_between_destinations
+			distance_for_combined_trip = a + ab
+			delay_for_b = (distance_for_combined_trip - b)/(float)b
+			sharing_gain = distance_for_combined_trip/(a+b)
+			if(delay_for_b < treshold):
+				graph_with_normal_treshold.add_nodes_from([trips[i].id, trips[j].id])
+				graph_with_normal_treshold.add_edge((trips[i].id, trips[j].id), sharing_gain)
+			if(delay_for_b < treshold/2):
+				graph_with_restricted_treshold.add_nodes_from([trips[i].id, trips[j].id])
+				graph_with_restricted_treshold.add_edge((trips[i].id, trips[j].id), sharing_gain)
+	return (graph_with_normal_treshold, graph_with_restricted_treshold)
+
+def get_merged_trips(graph):
+	list_of_merged_trips = []
+	matched_edges = nx.algorithms.matching.max_weight_matching(graph)
+	for i in matched_edges:
+		trip1 = i
+		trip2 = matched_edges[i]
+		merged_trip = MergedTrip(trip1, trip2)
+		list_of_merged_trips.append(merged_trip)
+	return list_of_merged_trips
+
+def remove_trips_from_graph(graph, list_of_merged_trips):
+	graph_copy = copy.deepcopy(graph)
+	for merged_trip in list_of_merged_trips:
+		graph_copy.remove_edge(merged_trip.trip1, merged_trip.trip2);
+	return graph_copy
+
+def find_trip(list_of_merged_trips, trip):
+	for merged_trip in list_of_merged_trips:
+		if(merged_trip.contains(trip)):
+			return merged_trip
+
+def algorithm():
+	logging.basicConfig(filename='distance.log')
+	result_file = open('result_graph.p', 'wb')
+	trip_subset = input_file.get_batch(0)
+	graph_with_normal_treshold, graph_with_restricted_treshold = get_shareability_graph(trip_subset, MERGING_TRESHOLD)
+	trips_merged_in_first_round = get_merged_trips(graph_with_normal_treshold)
+	restricted_graph_with_edges_removed = remove_trips_from_graph(graph_with_restricted_treshold, trips_merged_in_first_round)
+	merged_trips = get_merged_trips(restricted_graph_with_edges_removed)
+
+	
+
+"""
 try:
 	for i in range(30):
 		for j in range(i, 30):
@@ -60,5 +114,9 @@ try:
 						(effective_distance_b-distance_for_b)/distance_for_b)
 except Exception as e:
 	logging.error(str(e))
-
+#graph.add_nodes_from([trip.id for trip in trip_subset])
 pickle.dump(graph, result_file)
+
+def find_distance_from_source(latitude, longitude):
+	return find_distance(SOURCE_LATITUDE, SOURCE_LONGITUDE, latitude, longitude)
+"""
