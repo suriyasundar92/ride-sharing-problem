@@ -7,13 +7,13 @@ class MergedTrips:
 	"""
 	def __init__(self, trip1, trip2):
 		self.trip_list = []
-		if(trip1.id == trip2.id):
+		if(trip1 == trip2):
 			raise Exception("Duplicate Trip")
 		self.trip_list.append(trip1)
 		self.trip_list.append(trip2)
 
 	def add(self, trip):
-		if(self.contains(trip.id)):
+		if(self.contains(trip)):
 			raise Exception("Duplicate Trip")
 		self.trip_list.append(trip)
 
@@ -22,7 +22,10 @@ class MergedTrips:
 
 	def __hash__(self):
 
-		return str(self.trip1.id).zfill(20) + str(self.trip2.id).zfill(20)
+		return str(self.trip).zfill(20) + str(self.trip2).zfill(20)
+
+	def __str__(self):
+		return str(self.trip_list)
 
 
 class Trip:
