@@ -30,7 +30,7 @@ def find_distance(srcLat, srcLong, destLat, destLong):
         time = convert_time(paths[0]["time"])
         result = [distance, time]
     except URLError:
-        print "URL Error"
+        result = [-1, -1]
 
     return result
 
@@ -51,10 +51,10 @@ def find_distance_two(srcLat, srcLong, destLat, destLong, destLat1, destLong1):
         time = convert_time(paths[0]["time"])
         result = [distance, time]
     except URLError:
-        print "URL Error"
+        result = [-1, -1]
 
     return result
 
 #print find_distance(40.737015, -73.98833, 40.774783, -74.02082)
 #print find_distance_two(40.737015, -73.98833, 40.774783, -74.02082, 40.744759, -74.060325)
-#print find_distance_two(40.737015, -73.98833, 40.744759, -74.060325, 40.774783, -74.02082)
+print find_distance_two(40.737015, -73.98833, 40.744759, -74.060325, 0, 0)
