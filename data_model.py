@@ -9,16 +9,20 @@ class MergedTrips:
 		self.trip_list = []
 		if(trip1.id == trip2.id):
 			raise Exception("Duplicate Trip")
-		self.trip_list.append(trip1.id)
-		self.trip_list.append(trip2.id)
+		self.trip_list.append(trip1)
+		self.trip_list.append(trip2)
 
-	def add(trip):
+	def add(self, trip):
 		if(self.contains(trip.id)):
 			raise Exception("Duplicate Trip")
 		self.trip_list.append(trip)
 
-	def contains(trip):
+	def contains(self, trip):
 		return trip.id in self.trip_list
+
+	def __hash__(self):
+
+		return str(self.trip1.id).zfill(20) + str(self.trip2.id).zfill(20)
 
 
 class Trip:

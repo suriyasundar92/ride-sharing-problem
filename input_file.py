@@ -54,6 +54,10 @@ def batch_input_file(input_file):
 			trip_for_first_record = trip_for_record
 	except StopIteration:
 		pass
+
+#def get_trips_for_batch():
+
+
 if __name__ == "__main__":
 	data_file = open("trip_data_1.csv")
 	batch_input_file(data_file)

@@ -1,33 +1,39 @@
 import pickle
 import input_file
 import logging
-from GoogleDistance import find_distance
+#from GoogleDistance import find_distance
+from HopperDistance import find_distance
 import data_model
 import networkx as nx
+MERGING_TRESHOLD = 0.5
+(SOURCE_LATITUDE, SOURCE_LONGITUDE) = (40.644104, -73.782665)
 
-(SOURCE_LATITUDE, SOURCE_LONGITUDE) = (0, 0)
-
+def find_distance_from_source(latitude, longitude):
+	return find_distance(SOURCE_LATITUDE, SOURCE_LONGITUDE, latitude, longitude)
 
 def get_shareability_graph(trips, treshold):
 	graph_with_normal_treshold = nx.Graph()
-	graph_with_restricted_teshold = nx.Graph()
+	graph_with_restricted_treshold = nx.Graph()
 	for i in range(len(trips)):
 		for j in range(i, len(trips)):
-			trip_distance_i = find_distance_from_source(trips[i].latitude, trips[i].longitude)
-			trip_distance_j = find_distance_from_source(trips[j].latitude, trips[j].longitude)
-			distance_between_destinations = find_distance(trips[i].latitude, trips[i].longitude,
-				trips[j].latitude, trips[j].longitude)
-			a, b = sorted([trip_distance_i, trip_distance_j])
-			ab = distance_between_destinations
-			distance_for_combined_trip = a + ab
-			delay_for_b = (distance_for_combined_trip - b)/(float)b
-			sharing_gain = distance_for_combined_trip/(a+b)
-			if(delay_for_b < treshold):
-				graph_with_normal_treshold.add_nodes_from([trips[i].id, trips[j].id])
-				graph_with_normal_treshold.add_edge((trips[i].id, trips[j].id), sharing_gain)
-			if(delay_for_b < treshold/2):
-				graph_with_restricted_treshold.add_nodes_from([trips[i].id, trips[j].id])
-				graph_with_restricted_treshold.add_edge((trips[i].id, trips[j].id), sharing_gain)
+			try:
+				trip_distance_i = find_distance_from_source(trips[i].destination.latitude, trips[i].destination.longitude)[0]
+				trip_distance_j = find_distance_from_source(trips[j].destination.latitude, trips[j].destination.longitude)[0]
+				distance_between_destinations = find_distance(trips[i].destination.latitude, trips[i].destination.longitude,
+					trips[j].destination.latitude, trips[j].destination.longitude)[0]
+				a, b = sorted([trip_distance_i, trip_distance_j])
+				ab = distance_between_destinations
+				distance_for_combined_trip = a + ab
+				delay_for_b = (distance_for_combined_trip - b)/float(b)
+				sharing_gain = distance_for_combined_trip/(a+b)
+				if(delay_for_b < treshold):
+					graph_with_normal_treshold.add_nodes_from([trips[i].id, trips[j].id])
+					graph_with_normal_treshold.add_edge((trips[i].id, trips[j].id), sharing_gain)
+				if(delay_for_b < treshold/2):
+					graph_with_restricted_treshold.add_nodes_from([trips[i].id, trips[j].id])
+					graph_with_restricted_treshold.add_edge((trips[i].id, trips[j].id), sharing_gain)
+			except Exception as e:
+				pass
 	return (graph_with_normal_treshold, graph_with_restricted_treshold)
 
 def get_merged_trips(graph):
@@ -60,7 +66,9 @@ def algorithm():
 	restricted_graph_with_edges_removed = remove_trips_from_graph(graph_with_restricted_treshold, trips_merged_in_first_round)
 	merged_trips = get_merged_trips(restricted_graph_with_edges_removed)
 
-	
+
+if __name__ == "__main__":
+	algorithm()
 
 """
 try:
@@ -116,7 +124,4 @@ except Exception as e:
 	logging.error(str(e))
 #graph.add_nodes_from([trip.id for trip in trip_subset])
 pickle.dump(graph, result_file)
-
-def find_distance_from_source(latitude, longitude):
-	return find_distance(SOURCE_LATITUDE, SOURCE_LONGITUDE, latitude, longitude)
 """
