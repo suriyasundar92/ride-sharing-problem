@@ -8,7 +8,9 @@ import GetData
 import networkx as nx
 import copy
 
-MERGING_TRESHOLD = 0.25
+WALKING_TRESHOLD = 1
+MERGING_TRESHOLD = 0.02
+WINDOW_SIZE = 5
 (SOURCE_LATITUDE, SOURCE_LONGITUDE) = (40.644104, -73.782665)
 
 def find_distance_from_source(latitude, longitude):
@@ -67,19 +69,22 @@ def find_trip(list_of_merged_trips, trip):
 			return merged_trip
 
 def add_trip_to_candidate(list_of_merged_trips, merged_trip):
-	primary_merged_trip = find_trip(list_of_merged_trips, merged_trip.trip_list[0])
-	if primary_merged_trip:
-		primary_merged_trip.add(merged_trip.trip_list[0])
-		return primary_merged_trip
-	primary_merged_trip = find_trip(list_of_merged_trips, merged_trip.trip_list[1])
-	if primary_merged_trip:
-		primary_merged_trip.add(merged_trip.trip_list[1])
-		return primary_merged_trip
+	try:
+		primary_merged_trip = find_trip(list_of_merged_trips, merged_trip.trip_list[0])
+		if primary_merged_trip:
+			primary_merged_trip.add(merged_trip.trip_list[1])
+			return primary_merged_trip
+		primary_merged_trip = find_trip(list_of_merged_trips, merged_trip.trip_list[1])
+		if primary_merged_trip:
+			primary_merged_trip.add(merged_trip.trip_list[0])
+			return primary_merged_trip
+	except Exception:
+		pass
 
 def algorithm():
 	logging.basicConfig(filename='distance.log')
 	result_file = open('result_graph.p', 'wb')
-	trip_subset = GetData.GetData(WINDOW_SIZE, 100)
+	trip_subset = GetData.GetData(WINDOW_SIZE, 10)
 	graph_with_normal_treshold, graph_with_restricted_treshold = get_shareability_graph(trip_subset, MERGING_TRESHOLD)
 	trips_merged_in_first_round = get_merged_trips(graph_with_normal_treshold)
 	for i in trips_merged_in_first_round:
@@ -88,6 +93,9 @@ def algorithm():
 	merged_trips = get_merged_trips(restricted_graph_with_edges_removed)
 	for merged_trip in merged_trips:
 		add_trip_to_candidate(trips_merged_in_first_round, merged_trip)
+	print "Three trips"
+	for i in trips_merged_in_first_round:
+		print str(i)
 
 
 
