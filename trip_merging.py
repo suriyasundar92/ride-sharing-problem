@@ -4,6 +4,7 @@ import logging
 #from GoogleDistance import find_distance
 from HopperDistance import find_distance
 import data_model
+import GetData
 import networkx as nx
 import copy
 
@@ -64,6 +65,7 @@ def find_trip(list_of_merged_trips, trip):
 	for merged_trip in list_of_merged_trips:
 		if(merged_trip.contains(trip)):
 			return merged_trip
+
 def add_trip_to_candidate(list_of_merged_trips, merged_trip):
 	primary_merged_trip = find_trip(list_of_merged_trips, merged_trip.trip_list[0])
 	if primary_merged_trip:
@@ -73,13 +75,11 @@ def add_trip_to_candidate(list_of_merged_trips, merged_trip):
 	if primary_merged_trip:
 		primary_merged_trip.add(merged_trip.trip_list[1])
 		return primary_merged_trip
-		
-
 
 def algorithm():
 	logging.basicConfig(filename='distance.log')
 	result_file = open('result_graph.p', 'wb')
-	trip_subset = input_file.get_batch(0)[:100]
+	trip_subset = GetData.GetData(WINDOW_SIZE, 100)
 	graph_with_normal_treshold, graph_with_restricted_treshold = get_shareability_graph(trip_subset, MERGING_TRESHOLD)
 	trips_merged_in_first_round = get_merged_trips(graph_with_normal_treshold)
 	for i in trips_merged_in_first_round:
