@@ -70,12 +70,17 @@ def find_trip(list_of_merged_trips, trip):
 
 def add_trip_to_candidate(list_of_merged_trips, merged_trip):
 	try:
-		primary_merged_trip = find_trip(list_of_merged_trips, merged_trip.trip_list[0])
-		if primary_merged_trip:
+		primary_merged_trip1 = find_trip(list_of_merged_trips, merged_trip.trip_list[0])
+		primary_merged_trip2 = find_trip(list_of_merged_trips, merged_trip.trip_list[1])
+		if primary_merged_trip1 && primary_merged_trip2:
+			merged_trip.add(primary_merged_trip1.getPartner(merged_trip.trip_list[0]))
+			merged_trip.add(primary_merged_trip2.getPartner(merged_trip.trip_list[1]))
+
+		elif primary_merged_trip1:
 			primary_merged_trip.add(merged_trip.trip_list[1])
 			return primary_merged_trip
-		primary_merged_trip = find_trip(list_of_merged_trips, merged_trip.trip_list[1])
-		if primary_merged_trip:
+		
+		elif primary_merged_trip2:
 			primary_merged_trip.add(merged_trip.trip_list[0])
 			return primary_merged_trip
 	except Exception:
