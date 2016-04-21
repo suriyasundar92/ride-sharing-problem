@@ -28,26 +28,26 @@ def get_shareability_graph(trips, treshold):
 				distance_for_combined_trip = a + ab
 				delay_for_b = (distance_for_combined_trip - b)/float(b)
 				sharing_gain = distance_for_combined_trip/(a+b)
+				walking = ab < WALKING_TRESHOLD
 				if(delay_for_b < treshold):
 					graph_with_normal_treshold.add_nodes_from([trips[i].id, trips[j].id])
-					graph_with_normal_treshold.add_edge(trips[i].id, trips[j].id, weight=sharing_gain)
+					graph_with_normal_treshold.add_edge(trips[i].id, trips[j].id, weight=sharing_gain, delay=delay_for_b, walking=walking)
 					print "a:"+str(a)+"b:"+str(b)+"ab:"+str(ab)+"distance combined"+str(distance_for_combined_trip)+"\n"+"delay"+str(delay_for_b)+"\n"
 				if(delay_for_b < treshold/2):
 					graph_with_restricted_treshold.add_nodes_from([trips[i].id, trips[j].id])
-					graph_with_restricted_treshold.add_edge(trips[i].id, trips[j].id, weight=sharing_gain)
+					graph_with_restricted_treshold.add_edge(trips[i].id, trips[j].id, weight=sharing_gain, delay=delay_for_b, walking=walking)
 			except Exception as e:
 				pass
 	return (graph_with_normal_treshold, graph_with_restricted_treshold)
 
 def get_merged_trips(graph):
-	list_of_merged_trips = []
+	list_of_merged_trips = {}
 	matched_edges = nx.algorithms.matching.max_weight_matching(graph)
 	#print matched_edges
 	for i in matched_edges:
 		trip1 = i
 		trip2 = matched_edges[i]
-		merged_trip = data_model.MergedTrips(trip1, trip2)
-		list_of_merged_trips.append(merged_trip)
+		list_of_merged_trips[data_model.MergedTrips(trip1, trip2, )] = {"sharing_gain": graph[trip1][trip2]["weight"], "delay": graph[trip1][trip2]["delay"], "walking": graph[trip1][trip2]["walking"]}		
 	return list_of_merged_trips
 
 def remove_trips_from_graph(graph, list_of_merged_trips):
@@ -64,6 +64,17 @@ def find_trip(list_of_merged_trips, trip):
 	for merged_trip in list_of_merged_trips:
 		if(merged_trip.contains(trip)):
 			return merged_trip
+def add_trip_to_candidate(list_of_merged_trips, merged_trip):
+	primary_merged_trip = find_trip(list_of_merged_trips, merged_trip.trip_list[0])
+	if primary_merged_trip:
+		primary_merged_trip.add(merged_trip.trip_list[0])
+		return primary_merged_trip
+	primary_merged_trip = find_trip(list_of_merged_trips, merged_trip.trip_list[1])
+	if primary_merged_trip:
+		primary_merged_trip.add(merged_trip.trip_list[1])
+		return primary_merged_trip
+		
+
 
 def algorithm():
 	logging.basicConfig(filename='distance.log')
@@ -75,6 +86,9 @@ def algorithm():
 		print str(i)
 	restricted_graph_with_edges_removed = remove_trips_from_graph(graph_with_restricted_treshold, trips_merged_in_first_round)
 	merged_trips = get_merged_trips(restricted_graph_with_edges_removed)
+	for merged_trip in merged_trips:
+		add_trip_to_candidate(trips_merged_in_first_round, merged_trip)
+
 
 
 
