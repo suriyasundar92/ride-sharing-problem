@@ -7,9 +7,10 @@ import data_model
 import GetData
 import networkx as nx
 import copy
+import datetime
 
-WALKING_TRESHOLD = 1
-MERGING_TRESHOLD = 0.02
+WALKING_TRESHOLD = 2
+MERGING_TRESHOLD = 0.01
 WINDOW_SIZE = 5
 (SOURCE_LATITUDE, SOURCE_LONGITUDE) = (40.644104, -73.782665)
 
@@ -35,7 +36,7 @@ def get_shareability_graph(trips, treshold):
 				if(delay_for_b < treshold):
 					graph_with_normal_treshold.add_nodes_from([trips[i].id, trips[j].id])
 					graph_with_normal_treshold.add_edge(trips[i].id, trips[j].id, weight=sharing_gain, delay=delay_for_b, walking=walking)
-					print "a:"+str(a)+"b:"+str(b)+"ab:"+str(ab)+"distance combined"+str(distance_for_combined_trip)+"\n"+"delay"+str(delay_for_b)+"\n"
+					#print "a:"+str(a)+"b:"+str(b)+"ab:"+str(ab)+"distance combined"+str(distance_for_combined_trip)+"\n"+"delay"+str(delay_for_b)+"\n"
 				if(delay_for_b < treshold/2):
 					graph_with_restricted_treshold.add_nodes_from([trips[i].id, trips[j].id])
 					graph_with_restricted_treshold.add_edge(trips[i].id, trips[j].id, weight=sharing_gain, delay=delay_for_b, walking=walking)
@@ -48,65 +49,118 @@ def get_merged_trips(graph):
 	matched_edges = nx.algorithms.matching.max_weight_matching(graph)
 	#print matched_edges
 	for i in matched_edges:
+		#print(str(i) + ":" + str(matched_edges[i]))
 		trip1 = i
 		trip2 = matched_edges[i]
 		list_of_merged_trips[data_model.MergedTrips(trip1, trip2, )] = {"sharing_gain": graph[trip1][trip2]["weight"], "delay": graph[trip1][trip2]["delay"], "walking": graph[trip1][trip2]["walking"]}		
-	return list_of_merged_trips
+	return list(list_of_merged_trips)
 
 def remove_trips_from_graph(graph, list_of_merged_trips):
-	try:
-		graph_copy = copy.deepcopy(graph)
-		for merged_trip in list_of_merged_trips:
+	graph_copy = copy.deepcopy(graph)
+	for merged_trip in list_of_merged_trips:
+		try:
 			graph_copy.remove_edge(merged_trip.trip_list[0], merged_trip.trip_list[1])
-	except Exception:
-		pass
-
+		except Exception as e:
+			pass
 	return graph_copy
+
+def is_alrady_merged(list_of_merged_trips, trip):
+	for merged_trip in list_of_merged_trips:
+		if(merged_trip.contains(trip)):
+			return len(merged_trip.trip_list) < 3
 
 def find_trip(list_of_merged_trips, trip):
 	for merged_trip in list_of_merged_trips:
 		if(merged_trip.contains(trip)):
-			return merged_trip
+			if(len(merged_trip.trip_list) <= 2):
+				return merged_trip
 
 def add_trip_to_candidate(list_of_merged_trips, merged_trip):
 	try:
+		#print "Merged Trip: " + str(merged_trip)
 		primary_merged_trip1 = find_trip(list_of_merged_trips, merged_trip.trip_list[0])
 		primary_merged_trip2 = find_trip(list_of_merged_trips, merged_trip.trip_list[1])
-		if primary_merged_trip1 && primary_merged_trip2:
-			merged_trip.add(primary_merged_trip1.getPartner(merged_trip.trip_list[0]))
-			merged_trip.add(primary_merged_trip2.getPartner(merged_trip.trip_list[1]))
+
+		if primary_merged_trip1 and primary_merged_trip2:
+			#print "Primary Merged Trip 1: " + str(primary_merged_trip1) + "Primary Merged Trip 2: " + str(primary_merged_trip2)
+			primary_merged_trip1.add(primary_merged_trip2.trip_list[0])
+			primary_merged_trip1.add(primary_merged_trip2.trip_list[1])
+			list_of_merged_trips.pop(list_of_merged_trips.index(primary_merged_trip2))
+			return merged_trip
 
 		elif primary_merged_trip1:
-			primary_merged_trip.add(merged_trip.trip_list[1])
-			return primary_merged_trip
+			#print "Primary Merged Trip 1: " + str(primary_merged_trip1)
+			if is_alrady_merged(list_of_merged_trips, merged_trip.trip_list[1]):
+				primary_merged_trip1.add(merged_trip.trip_list[1])
+			return primary_merged_trip1
 		
 		elif primary_merged_trip2:
-			primary_merged_trip.add(merged_trip.trip_list[0])
-			return primary_merged_trip
-	except Exception:
-		pass
+			#print "Primary Merged Trip 2: " + str(primary_merged_trip2)
+			if is_alrady_merged(list_of_merged_trips, merged_trip.trip_list[0]):
+				primary_merged_trip2.add(merged_trip.trip_list[0])
+			return primary_merged_trip2
+	except Exception as e:
+		raise e
 
 def algorithm():
 	logging.basicConfig(filename='distance.log')
 	result_file = open('result_graph.p', 'wb')
-	trip_subset = GetData.GetData(WINDOW_SIZE, 10)
+	trip_subset = GetData.GetData(WINDOW_SIZE, 100)
 	graph_with_normal_treshold, graph_with_restricted_treshold = get_shareability_graph(trip_subset, MERGING_TRESHOLD)
 	trips_merged_in_first_round = get_merged_trips(graph_with_normal_treshold)
-	for i in trips_merged_in_first_round:
-		print str(i)
+	#print "First Round"
+	#for i in trips_merged_in_first_round:
+	print "First len" + str(len(trips_merged_in_first_round))
 	restricted_graph_with_edges_removed = remove_trips_from_graph(graph_with_restricted_treshold, trips_merged_in_first_round)
+
 	merged_trips = get_merged_trips(restricted_graph_with_edges_removed)
 	for merged_trip in merged_trips:
 		add_trip_to_candidate(trips_merged_in_first_round, merged_trip)
-	print "Three trips"
+	#print "Three trips"
+	actualCost = 0.0
+	combinedCost = 0.0
+	actualDist = 0.0
+	combinedDist = 0.0
+	cost = 0.0
+	tripCost = 0.0
+	dist = 0.0
+	tripDist = 0.0
+	four_trips = 0
+	three_trips = 0
+	two_trips = 0
 	for i in trips_merged_in_first_round:
 		print str(i)
+		if len(i.trip_list) == 2:
+			two_trips += 1
+		elif len(i.trip_list) == 3:
+			three_trips += 1
+		elif len(i.trip_list) == 4:
+			four_trips += 1
+		actualCost, combinedCost = i.getCostGain()
+		actualDist, combinedDist = i.getDistanceGain()
+		cost = cost + actualCost
+		tripCost = tripCost + combinedCost
+		dist = dist + actualDist
+		tripDist = tripDist + combinedDist
+
+	print "Actual distance: %d" %dist
+	print "Combined distance: %d" %tripDist
+	print "Actual Cost: %d" %cost
+	print "Combined Cost: %d" %tripCost
+	print "four_trips: %d" %four_trips
+	print "two trips: %d" %two_trips
+	print "three_trips: %d" %three_trips
+
+
+
 
 
 
 
 if __name__ == "__main__":
+	print datetime.datetime.now()
 	algorithm()
+	print datetime.datetime.now()
 
 """
 try:

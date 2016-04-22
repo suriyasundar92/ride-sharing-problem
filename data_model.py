@@ -3,6 +3,7 @@ import trip_merging
 from HopperDistance import find_distance
 WINDOW_SIZE_IN_MIN = 15
 DELAY_TOLERANCE = 0.25
+WALKING_TOLRENCE = 1.5
 
 class MergedTrips:
 	"""
@@ -25,34 +26,54 @@ class MergedTrips:
 
 	def getCostGain(self):
 		distance_mapping = {}
+		combined_cost = 0.0
 		for id in self.trip_list:
 			trip = GetData.GetTripDetails(id)
-			distance = trip_merging.getDistanceFromSource(trip.destination.latitude, trip.destination.longitude)
+			distance = trip_merging.find_distance_from_source(trip.destination.latitude, trip.destination.longitude)[0]
 			distance_mapping[distance] = id
+		sum_distance = sum(list(distance_mapping))
 		if len(self.trip_list) == 2:
-			return sum(list(distance_mapping)) * 0.2
-		if len(self.trip_list) == 3:
-			return sum(list(distance_mapping)) * 0.3
+			combined_cost = sum_distance * 0.8
+		elif len(self.trip_list) == 3:
+			combined_cost = sum_distance * 0.7
+		elif len(self.trip_list) == 4:
+			combined_cost = sum_distance * 0.6
+
+		return(sum_distance, combined_cost)
+
 
 	def getDistanceGain(self):
 		distance_mapping = {}
+		ordered_trip_list = []
 		for id in self.trip_list:
 			trip = GetData.GetTripDetails(id)
-			distance = trip_merging.getDistanceFromSource(trip.destination.latitude, trip.destination.longitude)
+			distance = trip_merging.find_distance_from_source(trip.destination.latitude, trip.destination.longitude)[0]
 			distance_mapping[distance] = id
-		ordered_trip_list = []
 		for distance in sorted(list(distance_mapping)):
 			ordered_trip_list.append(distance_mapping[distance])
-		i = 0
-		combined_trip_distance = sorted(list(distance_mapping))[0]
-		while(i<2):
-			trip1 = GetData.GetTripDetails(ordered_trip_list[i])
-			trip2 = GetData.GetTripDetails(ordered_trip_list[i+1])
-			distance_between_destinations = find_distance(trip1.destination.latitude, trip1.destination.longitude,
+
+		trip = GetData.GetTripDetails(ordered_trip_list[0])
+		combined_trip_distance = trip.distance
+		i=1
+		source = 0
+		while(i<len(self.trip_list)):
+			trip1 = GetData.GetTripDetails(ordered_trip_list[source])
+			trip2 = GetData.GetTripDetails(ordered_trip_list[i])
+			difference = find_distance(trip1.destination.latitude, trip1.destination.longitude,
 					trip2.destination.latitude, trip2.destination.longitude)[0]
-			combined_trip_distance += distance_between_destinations
+			if difference > WALKING_TOLRENCE:
+				source = i
+				combined_trip_distance += difference
+			else:
+				print "nope: %s" %difference
+			i += 1
 		normal_trip_distance = sum(list(distance_mapping))
-		return normal_trip_distance - combined_trip_distance
+		return (normal_trip_distance, combined_trip_distance)
+
+	def getPartner(self, id):
+		for i in self.trip_list:
+			if i != id:
+				return i
 
 	def getTripCount(self):
 		return len(self.trip_list)
