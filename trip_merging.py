@@ -55,7 +55,7 @@ def get_merged_trips(graph):
 		list_of_merged_trips[data_model.MergedTrips(trip1, trip2, )] = {"sharing_gain": graph[trip1][trip2]["weight"], "delay": graph[trip1][trip2]["delay"], "walking": graph[trip1][trip2]["walking"]}		
 	return list(list_of_merged_trips)
 
-def remove_trips_from_graph(graph, list_of_merged_trips):
+def remove_tripshare_from_graph(graph, list_of_merged_trips):
 	graph_copy = copy.deepcopy(graph)
 	for merged_trip in list_of_merged_trips:
 		try:
@@ -63,6 +63,29 @@ def remove_trips_from_graph(graph, list_of_merged_trips):
 		except Exception as e:
 			pass
 	return graph_copy
+
+def remove_trips_from_graph(graph, list_of_merged_trips):
+	graph_copy = copy.deepcopy(graph)
+	for merged_trip in list_of_trips:
+		try:
+			graph_copy.remove_node(trip)
+		except Exception as e:
+			pass
+	return graph_copy	
+
+def remove_redundant_edges(graph, list_of_trips):
+	graph_copy = copy.deepcopy(graph)
+	for i in range(len(list_of_trips)):
+		for j in range(j+1, len(list_of_trips)):
+			try:
+				graph_copy.remove_edge(list_of_trips[i], list_of_trips[j])
+			except Exception as e:
+				pass
+	return graph_copy
+
+def prepare_graph(graph, list_of_trips_of_high_degree, list_of_double_trips):
+	graph = remove_trips_from_graph(graph, list_of_trips_of_high_degree)
+	return remove_redundant_edges(list_of_double_trips)
 
 def is_alrady_merged(list_of_merged_trips, trip):
 	for merged_trip in list_of_merged_trips:
@@ -128,21 +151,37 @@ def algorithm():
 	four_trips = 0
 	three_trips = 0
 	two_trips = 0
+	list_of_trips_of_high_degree = []
+	list_of_double_tripids = []
+	list_of_double_trips = []
 	for i in trips_merged_in_first_round:
 		print str(i)
 		if len(i.trip_list) == 2:
 			two_trips += 1
+			list_of_double_trips.add(i)
+			for _ in i.trip_list:
+				list_of_double_tripids.add(_)
 		elif len(i.trip_list) == 3:
 			three_trips += 1
+			for _ in i.trip_list:
+				list_of_trips_of_high_degree.add(_)
+			list_of_trips_of_high_degree.append(i.trip_list)
 		elif len(i.trip_list) == 4:
 			four_trips += 1
+			for _ in i.trip_list:
+				list_of_trips_of_high_degree.add(_)
+
 		actualCost, combinedCost = i.getCostGain()
 		actualDist, combinedDist = i.getDistanceGain()
 		cost = cost + actualCost
 		tripCost = tripCost + combinedCost
 		dist = dist + actualDist
 		tripDist = tripDist + combinedDist
-
+	list_of_double_trips = 
+	graph_for_three_trips = prepare_graph(graph_with_restricted_treshold, list_of_trips_of_high_degree, list_of_double_trips)
+	merged_trips = get_merged_trips(graph_for_three_trips)
+	for merged_trip in merged_trips:
+		add_trip_to_candidate(list_of_double_trips, merged_trip)
 	print "Actual distance: %d" %dist
 	print "Combined distance: %d" %tripDist
 	print "Actual Cost: %d" %cost
