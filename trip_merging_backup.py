@@ -1,5 +1,3 @@
-#This is the file that conatins the trip merging algorithm
-
 import logging
 from HopperDistance import find_distance
 import data_model
@@ -8,20 +6,16 @@ import networkx as nx
 import copy
 import datetime
 
-#Parameters for the algorithm
 WALKING_TRESHOLD = 0
 MERGING_TRESHOLD = 0.02
 WINDOW_SIZE = 5
 DATA_LIMIT = 200
 
-#Setting the source lat and long position to JFK airport
 (SOURCE_LATITUDE, SOURCE_LONGITUDE) = (40.644104, -73.782665)
 
-#Getting the distance between the source and the given destination
 def find_distance_from_source(latitude, longitude):
 	return find_distance(SOURCE_LATITUDE, SOURCE_LONGITUDE, latitude, longitude)
 
-#This method is to construct the Shareability graph
 def get_shareability_graph(trips, treshold):
 	graph_with_normal_treshold = nx.Graph()
 	graph_with_restricted_treshold = nx.Graph()
@@ -49,7 +43,6 @@ def get_shareability_graph(trips, treshold):
 				pass
 	return (graph_with_normal_treshold, graph_with_restricted_treshold)
 
-#This method is to run the maximum matching on the constructed graph and to get the results
 def get_merged_trips(graph):
 	list_of_merged_trips = {}
 	matched_edges = nx.algorithms.matching.max_weight_matching(graph)
@@ -58,10 +51,9 @@ def get_merged_trips(graph):
 		#print(str(i) + ":" + str(matched_edges[i]))
 		trip1 = i
 		trip2 = matched_edges[i]
-		list_of_merged_trips[data_model.MergedTrips(trip1, trip2, )] = {"sharing_gain": graph[trip1][trip2]["weight"], "delay": graph[trip1][trip2]["delay"], "walking": graph[trip1][trip2]["walking"]}		
+		list_of_merged_trips[data_model.MergedTrips(trip1, trip2, )] = {"sharing_gain": graph[trip1][trip2]["weight"], "delay": graph[trip1][trip2]["delay"], "walking": graph[trip1][trip2]["walking"]}
 	return list(list_of_merged_trips)
 
-#This method is to remove edges to form the restricted graph for the second round
 def remove_tripshare_from_graph(graph, list_of_merged_trips):
 	graph_copy = copy.deepcopy(graph)
 	for merged_trip in list_of_merged_trips:
@@ -71,7 +63,6 @@ def remove_tripshare_from_graph(graph, list_of_merged_trips):
 			pass
 	return graph_copy
 
-#This is to remove the nodes that were merged in the first step
 def remove_trips_from_graph(graph, list_of_merged_trips):
 	graph_copy = copy.deepcopy(graph)
 	for merged_trip in list_of_merged_trips:
@@ -79,9 +70,8 @@ def remove_trips_from_graph(graph, list_of_merged_trips):
 			graph_copy.remove_node(merged_trip)
 		except Exception as e:
 			pass
-	return graph_copy	
+	return graph_copy
 
-#This method is to remove the redundent nodes in the graph
 def remove_redundant_edges(graph, list_of_trips):
 	graph_copy = copy.deepcopy(graph)
 	for i in range(len(list_of_trips)):
@@ -92,12 +82,10 @@ def remove_redundant_edges(graph, list_of_trips):
 				pass
 	return graph_copy
 
-#This is prepare a new graph by removing the said trips from the graph
 def prepare_graph(graph, list_of_trips_of_high_degree, list_of_double_trips):
 	graph = remove_trips_from_graph(graph, list_of_trips_of_high_degree)
 	return remove_redundant_edges(graph, list_of_double_trips)
 
-#This is to get the Lone trips after the algorithm finishes running
 def lone_trips(list_of_merged_trips):
 	lone_trips_list = []
 	all_trips = GetData.GetData(WINDOW_SIZE, DATA_LIMIT)
@@ -111,14 +99,12 @@ def lone_trips(list_of_merged_trips):
 			lone_trips_list.append(trip.id)
 	return lone_trips_list
 
-#This method is to check of a method is already merged with another node
 def is_alrady_merged(list_of_merged_trips, trip):
 	for merged_trip in list_of_merged_trips:
 		if(merged_trip.contains(trip)):
 			return len(merged_trip.trip_list) < 3
 	return True
 
-#This method is find a trip from a list of merged trips
 def find_trip(list_of_merged_trips, trip):
 	for merged_trip in list_of_merged_trips:
 		if(merged_trip.contains(trip)):
@@ -143,7 +129,7 @@ def add_trip_to_candidate(list_of_merged_trips, merged_trip):
 			if is_alrady_merged(list_of_merged_trips, merged_trip.trip_list[1]):
 				primary_merged_trip1.add(merged_trip.trip_list[1])
 			return primary_merged_trip1
-		
+
 		elif primary_merged_trip2:
 			#print "Primary Merged Trip 2: " + str(primary_merged_trip2)
 			if is_alrady_merged(list_of_merged_trips, merged_trip.trip_list[0]):
@@ -152,7 +138,6 @@ def add_trip_to_candidate(list_of_merged_trips, merged_trip):
 	except Exception as e:
 		raise e
 
-#This is the main method for executing the algorithm
 def algorithm():
 	logging.basicConfig(filename='distance.log')
 	result_file = open('result_graph.p', 'wb')
@@ -230,9 +215,65 @@ def algorithm():
 
 
 
-#This is to execute the algorithm when this method is made to run
+
 if __name__ == "__main__":
 	tic = datetime.datetime.now()
 	algorithm()
 	toc = datetime.datetime.now()
 	print toc - tic
+
+"""
+try:
+	for i in range(30):
+		for j in range(i, 30):
+			(distance_between_sources, time_between_sources) = find_distance(
+				str(trip_subset[i].source.latitude), str(trip_subset[i].source.longitude),
+				str(trip_subset[j].source.latitude), str(trip_subset[j].source.longitude))
+			(distance_for_a, time_for_a) = find_distance(
+				str(trip_subset[i].source.latitude), str(trip_subset[i].source.longitude),
+				str(trip_subset[i].destination.latitude), str(trip_subset[i].destination.longitude))
+			(distance_for_b, time_for_b) = find_distance(
+				str(trip_subset[j].source.latitude), str(trip_subset[j].source.longitude),
+				str(trip_subset[j].destination.latitude), str(trip_subset[j].destination.longitude))
+			(distance_form_a_to_b, time_form_a_to_b) = find_distance(
+				str(trip_subset[i].source.latitude), str(trip_subset[i].source.longitude),
+				str(trip_subset[j].destination.latitude), str(trip_subset[j].destination.longitude))
+			(distance_form_b_to_a, time_form_b_to_a) = find_distance(
+				str(trip_subset[j].source.latitude), str(trip_subset[j].source.longitude),
+				str(trip_subset[i].destination.latitude), str(trip_subset[i].destination.longitude))
+			(distance_between_destinations, time_between_destinations) = find_distance(
+				str(trip_subset[i].destination.latitude), str(trip_subset[i].destination.longitude),
+				str(trip_subset[j].destination.latitude), str(trip_subset[j].destination.longitude))
+			configuration_distances = [
+			(distance_between_sources + distance_for_a,
+				distance_between_sources + distance_for_a + distance_between_destinations,
+				distance_between_sources + distance_for_a + distance_between_destinations),
+			(distance_between_sources + distance_for_b + distance_between_destinations,
+				distance_between_sources + distance_for_b,
+				distance_between_sources + distance_for_b + distance_between_destinations),
+			(distance_between_sources + distance_form_a_to_b + distance_between_destinations,
+				distance_between_sources + distance_form_a_to_b,
+				distance_between_sources + distance_form_a_to_b + distance_between_destinations),
+			(distance_between_sources + distance_form_b_to_a,
+				distance_between_sources + distance_form_b_to_a + distance_between_destinations,
+				distance_between_sources + distance_form_b_to_a + distance_between_destinations)
+				]
+			shareable = True in [(effective_distance_a-distance_for_a)/distance_for_a < 0.25 and (effective_distance_b-distance_for_b)/distance_for_b < 0.25 for effective_distance_a, effective_distance_b, distance in configuration_distances]
+
+			if shareable:
+				trip_gain = float(distance)/float(distance_for_a + distance_for_b)
+				graph.add_edge((trip_subset[i].id, trip_subset[j].id), trip_gain)
+				for effective_distance_a, effective_distance_b, distance in configuration_distances:
+					logging.error('shareable loss(a): %f loss(b):%f',
+						(effective_distance_a-distance_for_a)/distance_for_a,
+						(effective_distance_b-distance_for_b)/distance_for_b)
+			else:
+				for effective_distance_a, effective_distance_b, distance in configuration_distances:
+					logging.error('loss(a): %f loss(b):%f',
+						(effective_distance_a-distance_for_a)/distance_for_a,
+						(effective_distance_b-distance_for_b)/distance_for_b)
+except Exception as e:
+	logging.error(str(e))
+#graph.add_nodes_from([trip.id for trip in trip_subset])
+pickle.dump(graph, result_file)
+"""

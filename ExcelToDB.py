@@ -1,14 +1,20 @@
+#This file is to load data from the given excels into the database
+#Before loading the data, this checks for the source's proximity to the JFK airport
+
 import MySQLdb
 import csv
 import datetime
 import HopperDistance
 
+#Database connection
 db = MySQLdb.Connect(host="localhost", port=3366, user="dbms", passwd="dbms", db="ridesharing")
 cursor = db.cursor()
 db.autocommit(True)
 
+#Opening the CSV file
 csv_data = csv.reader(open("E:\\DBMS\\Project\\trip_data_1.csv"))
 
+#Looping through all the data in CSV and inserting them into the database
 dataCount = 0
 for data in csv_data:
     if dataCount > 0:

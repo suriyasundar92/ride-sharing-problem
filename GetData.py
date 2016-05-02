@@ -1,3 +1,5 @@
+#This file is to fetch trip details from the database
+
 import MySQLdb
 import data_model
 
@@ -6,7 +8,8 @@ import data_model
 #Output is a list of Trip objects
 def GetData (windowSize, dataLimit):
     db = MySQLdb.Connect(host="localhost", port=3366, user="dbms", passwd="dbms", db="ridesharing")
-    sql = "select * from trip_details where pickup_time between '00:30:00' and '00:%s:00'" %str(30+windowSize)
+    #sql = "select * from trip_details where pickup_time between '00:30:00' and '00:%s:00'" %str(30+windowSize)
+    sql = "select * from trip_details where pickup_time <= '00:%s:00'" %windowSize
 
     if(dataLimit >= 1):
         sql = sql + "LIMIT %s" %dataLimit

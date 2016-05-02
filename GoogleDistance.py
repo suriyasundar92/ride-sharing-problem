@@ -1,6 +1,9 @@
+#This file is calculate the time and distance using the Google Maps API
+
 import csv
 import googlemaps
 
+#Method to convert time to the required format
 def convert_time(time):
     print time
     minutes = 0
@@ -16,16 +19,14 @@ def convert_time(time):
                 minutes += tempdata
     return minutes
 
-
+#Method to check if the location exists
 def location_exist(location):
-    try:
-        reader = csv.reader(open('distance_cache.csv', 'rb'), delimiter=',')
-        for row in reader:
-            if (row[0] == location[0] and row[1] == location[1]):
-                return (row[2], row[3])
-    except IOError:
-        pass
+    reader = csv.reader(open('E:\DBMS\Project\Test_Excel.csv', 'rb'), delimiter=',')
+    for row in reader:
+        if (row[0] == location[0] and row[1] == location[1]):
+            return (row[2], row[3])
 
+#Method to find the distance between a given source and destination
 def find_distance(srcLat, srcLong, destLat, destLong):
     source = srcLat + ', ' + srcLong
     destination = destLat + ', ' + destLong
@@ -40,7 +41,9 @@ def find_distance(srcLat, srcLong, destLat, destLong):
         drivetime = convert_time(distance.get('rows')[0].get('elements')[0].get('duration').get('text'))
         print drivedist
         print drivetime
-        writer = csv.writer(open('distance_cache.csv', 'a'), delimiter=',')
+        writer = csv.writer(open('E:\DBMS\Project\Test_Excel.csv', 'a'), delimiter=',')
         result = [drivedist, drivetime]
         writer.writerow(result)
         return result
+
+print find_distance("41.871027", "-87.662826", "40.769807", "-87.996358")

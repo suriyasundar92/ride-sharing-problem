@@ -1,3 +1,5 @@
+#This file interacts with the GraphHopper Directions API to get the distance and time between two points on the map
+
 import json
 from urllib2 import URLError, Request, urlopen
 
@@ -57,4 +59,4 @@ def find_distance_two(srcLat, srcLong, destLat, destLong, destLat1, destLong1):
 
 #print find_distance(40.737015, -73.98833, 40.774783, -74.02082)
 #print find_distance_two(40.737015, -73.98833, 40.774783, -74.02082, 40.744759, -74.060325)
-print find_distance_two(40.737015, -73.98833, 40.744759, -74.060325, 0, 0)
+#print find_distance_two(40.737015, -73.98833, 40.744759, -74.060325, 0, 0)
